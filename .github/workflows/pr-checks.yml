@@ -1,0 +1,46 @@
+name: PR checks
+
+on:
+  pull_request:
+
+# A newer push to the same PR cancels the older run: only the latest commit matters.
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  affected-tests:
+    name: Tests for the changed areas
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # full history, so the script can diff against the base branch
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # No browser install: these are API tests.
+      # No separate "start the app" step either: Playwright's webServer (playwright.config.js)
+      # starts a fresh app before the tests and stops it afterwards.
+      - name: Run only the affected tests
+        run: npm run test:affected
+        env:
+          BASE_REF: ${{ github.base_ref }} # the PR's target branch, passed as data, not pasted into the shell
+
+      - name: Upload HTML report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

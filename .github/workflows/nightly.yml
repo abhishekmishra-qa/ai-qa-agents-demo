@@ -1,0 +1,61 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # every day at 03:00 UTC
+  workflow_dispatch: # adds a "Run workflow" button for manual runs
+
+permissions:
+  contents: read
+
+jobs:
+  full-suite:
+    name: Full suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Upload HTML report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: report-full-suite
+          path: playwright-report/
+          retention-days: 14
+
+  planted-bugs:
+    name: Planted bugs (expected to fail)
+    # BUGGY=1 turns on two known bugs in the app (README "Planted bugs").
+    # This job SHOULD fail: a red result proves the tests catch real regressions.
+    # continue-on-error stops that expected failure from failing the whole nightly run.
+    # If this job ever passes, the tests stopped catching the bugs. Look into it.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    env:
+      BUGGY: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Upload HTML report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: report-planted-bugs
+          path: playwright-report/
+          retention-days: 14
