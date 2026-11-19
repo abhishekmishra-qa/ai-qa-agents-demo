@@ -1,0 +1,20 @@
+{
+  "name": "ai-qa-agents-demo",
+  "version": "1.0.0",
+  "description": "A tiny workspace API, Playwright API tests for its role rules, and Claude Code sub-agents for AI-assisted QA.",
+  "private": true,
+  "scripts": {
+    "start": "node app/server.js",
+    "test": "playwright test",
+    "test:affected": "node scripts/affected-tags.js --run"
+  },
+  "dependencies": {
+    "express": "^5.3.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
